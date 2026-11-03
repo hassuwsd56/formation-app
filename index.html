@@ -54,7 +54,8 @@
   .pername { font-weight: 700; font-size: 16px; }
 
   #field {
-    display: block; margin: 8px auto 0; touch-action: none; user-select: none; -webkit-user-select: none;
+    display: block; margin: 8px auto 0; touch-action: pan-x pan-y; user-select: none; -webkit-user-select: none;
+    -webkit-touch-callout: none;
     height: min(calc((100vw - 24px) * 1.5), 64vh); aspect-ratio: 2 / 3; max-width: 100%;
     border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.15);
   }
@@ -132,6 +133,7 @@
   .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
   .sheet {
     background: #fff; width: 100%; max-width: 560px; max-height: 82vh; overflow-y: auto;
+    overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
     border-radius: 16px 16px 0 0; padding: 14px 16px calc(18px + env(safe-area-inset-bottom));
     animation: up .18s ease-out;
   }
@@ -486,19 +488,44 @@ function bindField() {
   };
   svg.addEventListener('pointerup', end);
   svg.addEventListener('pointercancel', end);
+  // コマに触れたときだけスクロールを止める（コートの他の部分はスクロール可能）
+  svg.addEventListener('touchstart', e => { if (e.target.closest('g.piece')) e.preventDefault(); }, { passive: false });
+  svg.addEventListener('touchmove', e => { if (drag) e.preventDefault(); }, { passive: false });
 }
 
 /* ================= シート ================= */
+// シート表示中は背面ページを固定する
+let lockedY = null;
+function lockScroll() {
+  if (lockedY !== null) return;
+  lockedY = window.scrollY;
+  Object.assign(document.body.style, { position: 'fixed', top: `-${lockedY}px`, left: '0', right: '0', width: '100%' });
+}
+function unlockScroll() {
+  if (lockedY === null) return;
+  const y = lockedY; lockedY = null;
+  Object.assign(document.body.style, { position: '', top: '', left: '', right: '', width: '' });
+  window.scrollTo(0, y);
+}
 function openSheet(title, html) {
-  closeSheet();
+  const keepLock = !!$('#sheet');
+  if (keepLock) $('#sheet').remove();
   const el = document.createElement('div');
   el.className = 'backdrop'; el.id = 'sheet';
   el.innerHTML = `<div class="sheet"><div class="sheet-head"><h2>${esc(title)}</h2><button class="x" data-act="closeSheet">✕</button></div>${html}</div>`;
-  el.addEventListener('click', e => { if (e.target === el) closeSheet(); });
+  const openedAt = Date.now();
+  // 開いた直後のタップ（コマをタップした指の続き）で閉じないようにする
+  el.addEventListener('click', e => { if (e.target === el && Date.now() - openedAt > 400) closeSheet(); });
+  // シートの外をなぞっても背面がスクロールしないようにする
+  el.addEventListener('touchmove', e => {
+    const sh = e.target.closest('.sheet');
+    if (!sh || sh.scrollHeight <= sh.clientHeight) e.preventDefault();
+  }, { passive: false });
   document.body.appendChild(el);
+  lockScroll();
   return el;
 }
-function closeSheet() { const s = $('#sheet'); if (s) s.remove(); }
+function closeSheet() { const s = $('#sheet'); if (s) s.remove(); unlockScroll(); }
 function commit() { save(); closeSheet(); render(); }
 function toast(msg) {
   const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
