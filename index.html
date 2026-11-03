@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="フォーメーション">
+<meta name="theme-color" content="#f3f5f4">
+<title>フォーメーション管理</title>
+<style>
+  :root {
+    --bg: #f3f5f4; --card: #fff; --ink: #1b2420; --muted: #6b7a73;
+    --accent: #14804a; --accent-soft: #e6f4ec; --line: #dde3e0; --danger: #c0392b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+  }
+  header {
+    position: sticky; top: 0; z-index: 10; background: var(--bg);
+    padding: calc(env(safe-area-inset-top) + 8px) 12px 6px;
+  }
+  header h1 { font-size: 17px; margin: 0 0 8px; text-align: center; }
+  main { padding: 0 12px calc(84px + env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; }
+  h3 { font-size: 14px; margin: 0 0 8px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .hint { color: var(--muted); font-size: 12px; text-align: center; margin: 6px 0 10px; }
+
+  .seg { display: flex; background: #e2e8e5; border-radius: 10px; padding: 3px; max-width: 560px; margin: 0 auto; }
+  .seg button {
+    flex: 1; border: 0; background: transparent; padding: 8px 4px; border-radius: 8px;
+    font-size: 14px; color: var(--ink); font-family: inherit;
+  }
+  .seg button.on { background: #fff; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding: 10px 0 8px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none; white-space: nowrap; border: 1px solid var(--line); background: #fff; color: var(--ink);
+    border-radius: 999px; padding: 7px 13px; font-size: 14px; font-family: inherit;
+  }
+  .chip small { margin-left: 4px; opacity: .75; font-size: 11px; }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+  .chip.add { border-style: dashed; color: var(--accent); }
+
+  .row { display: flex; gap: 8px; align-items: center; }
+  .between { justify-content: space-between; }
+  .grow { flex: 1; min-width: 0; }
+  .pername { font-weight: 700; font-size: 16px; }
+
+  #field {
+    display: block; margin: 8px auto 0; touch-action: none; user-select: none; -webkit-user-select: none;
+    height: min(calc((100vw - 24px) * 1.5), 64vh); aspect-ratio: 2 / 3; max-width: 100%;
+    border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  }
+  #field .piece { cursor: grab; }
+
+  .card { background: var(--card); border-radius: 12px; padding: 12px; margin: 10px 0; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+  .bench {
+    border: 1px solid var(--line); background: #f7f9f8; border-radius: 8px; padding: 6px 10px;
+    font-size: 14px; font-family: inherit; color: var(--ink);
+  }
+  .bench b { color: var(--muted); margin-right: 4px; font-size: 12px; }
+  .sub { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 4px 0; }
+  .out { color: #c0392b; } .in { color: #14804a; }
+  .tag { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; color: #fff; }
+  .tag.out { background: #c0392b; color: #fff; } .tag.in { background: #14804a; color: #fff; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 10px;
+    padding: 11px 14px; font-size: 15px; font-family: inherit; font-weight: 600;
+  }
+  .btn.sm { padding: 6px 10px; font-size: 13px; border-radius: 8px; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.danger { color: var(--danger); border-color: #f0c9c4; }
+  .btn.block { display: flex; width: 100%; margin-top: 8px; }
+  .actions { display: flex; gap: 8px; margin: 10px 0; }
+  .actions .btn { flex: 1; }
+
+  input {
+    font-size: 16px; font-family: inherit; padding: 10px; border: 1px solid var(--line);
+    border-radius: 10px; background: #fff; color: var(--ink); width: 100%;
+  }
+  input.num-in { width: 84px; flex: none; }
+  label.field { display: block; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  label.field input { margin-top: 4px; }
+
+  .prow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .prow:last-child { border-bottom: 0; }
+  .num {
+    flex: none; width: 30px; height: 30px; border-radius: 50%; background: #1d4ed8; color: #fff;
+    font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .num.empty { background: #cfd8d3; }
+  .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+
+  /* table */
+  .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; background: #fff; margin: 10px 0; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  table { border-collapse: separate; border-spacing: 0; font-size: 13px; min-width: 100%; }
+  th, td { padding: 8px 6px; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { background: #f7f9f8; font-weight: 700; font-size: 12px; }
+  th.per { color: var(--accent); }
+  th.per small { display: block; color: var(--muted); font-weight: 400; }
+  .sticky { position: sticky; left: 0; background: #fff; text-align: left; z-index: 1; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+  th.sticky { background: #f7f9f8; }
+  td.on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  td.off { color: #b8c2bd; }
+  td.total { font-weight: 700; }
+  tr.foot td { background: #f7f9f8; font-size: 12px; }
+  td.warn { color: var(--danger); font-weight: 700; }
+
+  nav.tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex;
+    background: rgba(255,255,255,.96); border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  nav.tabs button {
+    flex: 1; border: 0; background: transparent; padding: 8px 0 10px; font-size: 11px; color: var(--muted);
+    font-family: inherit; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  nav.tabs button svg { width: 24px; height: 24px; }
+  nav.tabs button.on { color: var(--accent); font-weight: 700; }
+
+  /* sheet */
+  .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
+  .sheet {
+    background: #fff; width: 100%; max-width: 560px; max-height: 82vh; overflow-y: auto;
+    border-radius: 16px 16px 0 0; padding: 14px 16px calc(18px + env(safe-area-inset-bottom));
+    animation: up .18s ease-out;
+  }
+  @keyframes up { from { transform: translateY(30px); opacity: .5; } to { transform: none; opacity: 1; } }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .sheet-head h2 { font-size: 16px; margin: 0; }
+  .x { border: 0; background: #eef1ef; width: 30px; height: 30px; border-radius: 50%; font-size: 14px; color: var(--muted); }
+  .item {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--line);
+    background: #fff; padding: 10px 4px; font-size: 15px; font-family: inherit; color: var(--ink);
+  }
+  .item.cur { background: var(--accent-soft); }
+  .item .st { font-size: 12px; color: var(--muted); flex: none; }
+  .fitem { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .fitem svg { width: 40px; height: 60px; flex: none; border-radius: 4px; }
+  .fitem .btns { display: flex; flex-direction: column; gap: 4px; }
+  .section-title { font-size: 13px; color: var(--muted); margin: 16px 0 4px; font-weight: 700; }
+  .toast {
+    position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    background: rgba(30,30,30,.9); color: #fff; padding: 9px 16px; border-radius: 999px; font-size: 14px; z-index: 60;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>フォーメーション管理</h1>
+  <div class="seg" id="modeSeg"></div>
+</header>
+<main id="app"></main>
+<nav class="tabs" id="tabs">
+  <button data-act="tab" data-tab="field">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2.5" width="16" height="19" rx="1.5"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="12" cy="12" r="3"/></svg>
+    フィールド
+  </button>
+  <button data-act="tab" data-tab="plan">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></svg>
+    交代計画
+  </button>
+  <button data-act="tab" data-tab="players">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-6.5 8-6.5s7 2 8 6.5"/></svg>
+    選手
+  </button>
+</nav>
+
+<script>
+'use strict';
+
+/* ================= 定義 ================= */
+const MODES = {
+  soccer:  { label: 'サッカー',   n: 11, r: 4.4, color: '#2f8f4e', box: { w: .59, d: .157 }, gbox: { w: .27, d: .052 }, spot: .105, circle: .135, goal: .108, arc: true },
+  sociiti: { label: 'ソサイチ',   n: 7,  r: 5.4, color: '#2b8a62', box: { w: .52, d: .17 },  gbox: { w: .26, d: .06 },  spot: .12,  circle: .13,  goal: .15 },
+  futsal:  { label: 'フットサル', n: 5,  r: 6.2, color: '#2f6fb3', futsal: true, spot: .15, circle: .15, goal: .15 },
+};
+// [x, y] は %（x: 左→右, y: 上=敵陣 → 下=自陣）。先頭は GK
+const PRESETS = {
+  soccer: [
+    { name: '4-4-2', pos: [[50,92],[14,73],[38,77],[62,77],[86,73],[14,49],[38,53],[62,53],[86,49],[38,25],[62,25]] },
+    { name: '4-3-3', pos: [[50,92],[14,73],[38,77],[62,77],[86,73],[28,54],[50,58],[72,54],[18,28],[50,22],[82,28]] },
+    { name: '4-2-3-1', pos: [[50,92],[14,73],[38,77],[62,77],[86,73],[37,60],[63,60],[18,40],[50,40],[82,40],[50,20]] },
+    { name: '3-5-2', pos: [[50,92],[25,76],[50,78],[75,76],[10,50],[32,56],[50,48],[68,56],[90,50],[38,24],[62,24]] },
+  ],
+  sociiti: [
+    { name: '2-3-1', pos: [[50,92],[30,72],[70,72],[16,49],[50,52],[84,49],[50,25]] },
+    { name: '3-2-1', pos: [[50,92],[18,72],[50,75],[82,72],[33,50],[67,50],[50,25]] },
+    { name: '2-2-2', pos: [[50,92],[30,72],[70,72],[30,50],[70,50],[33,25],[67,25]] },
+    { name: '3-1-2', pos: [[50,92],[18,72],[50,75],[82,72],[50,52],[33,27],[67,27]] },
+  ],
+  futsal: [
+    { name: '1-2-1（ダイヤ）', pos: [[50,92],[50,72],[20,50],[80,50],[50,26]] },
+    { name: '2-2（ボックス）', pos: [[50,92],[30,68],[70,68],[30,36],[70,36]] },
+    { name: '3-1', pos: [[50,92],[18,64],[50,70],[82,64],[50,30]] },
+    { name: '4-0', pos: [[50,92],[14,55],[38,60],[62,60],[86,55]] },
+  ],
+};
+
+/* ================= 状態 ================= */
+const KEY = 'formationApp_v1';
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Math.random().toString(36).slice(2, 10);
+const round1 = v => Math.round(v * 10) / 10;
+
+function freshState() {
+  return { version: 1, mode: 'soccer', tab: 'field', players: [], plans: {}, formations: [] };
+}
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && s.version === 1 && Array.isArray(s.players)) return Object.assign(freshState(), s);
+  } catch (e) { /* ignore */ }
+  return freshState();
+}
+let S = load();
+let ctx = {};
+function save() { localStorage.setItem(KEY, JSON.stringify(S)); }
+
+function presetSlots(mode, idx = 0) { return PRESETS[mode][idx].pos.map(([x, y]) => ({ x, y, p: null })); }
+function ensurePlan(mode) {
+  if (!S.plans[mode] || !S.plans[mode].periods.length) {
+    const p = { id: uid(), name: '前半', minutes: null, slots: presetSlots(mode) };
+    S.plans[mode] = { periods: [p], cur: p.id };
+  }
+  return S.plans[mode];
+}
+const curPlan = () => ensurePlan(S.mode);
+function curPeriod() {
+  const plan = curPlan();
+  return plan.periods.find(p => p.id === plan.cur) || plan.periods[0];
+}
+const player = id => S.players.find(p => p.id === id);
+const pname = id => (player(id) || {}).name || '?';
+function sortedPlayers() {
+  return [...S.players].sort((a, b) => {
+    const na = a.number === '' ? Infinity : Number(a.number), nb = b.number === '' ? Infinity : Number(b.number);
+    return (isNaN(na) ? Infinity : na) - (isNaN(nb) ? Infinity : nb);
+  });
+}
+const onField = per => new Set(per.slots.map(s => s.p).filter(Boolean));
+function benchPlayers(per) { const f = onField(per); return sortedPlayers().filter(p => !f.has(p.id)); }
+
+// 直前の時間帯からの交代（OUT→IN のペア）
+function changeList(plan, idx) {
+  if (idx <= 0) return [];
+  const a = plan.periods[idx - 1], b = plan.periods[idx];
+  const A = onField(a), B = onField(b);
+  let outs = [...A].filter(p => !B.has(p)), ins = [...B].filter(p => !A.has(p));
+  const pairs = [];
+  b.slots.forEach((s, i) => {
+    if (s.p && ins.includes(s.p)) {
+      const prev = a.slots[i] && a.slots[i].p;
+      if (prev && outs.includes(prev)) {
+        pairs.push({ out: prev, in: s.p });
+        outs = outs.filter(x => x !== prev); ins = ins.filter(x => x !== s.p);
+      }
+    }
+  });
+  while (outs.length || ins.length) pairs.push({ out: outs.shift() || null, in: ins.shift() || null });
+  return pairs;
+}
+
+/* ================= フィールド描画 (SVG) ================= */
+const FX = 4, FY = 4, FW = 92, FH = 142;
+const toSvg = s => ({ X: FX + s.x / 100 * FW, Y: FY + s.y / 100 * FH });
+
+function fieldBg(mode) {
+  const M = MODES[mode], cx = 50, cy = FY + FH / 2, L = 'stroke="#fff" stroke-width=".5" fill="none" stroke-opacity=".9"';
+  let s = `<rect x="0" y="0" width="100" height="150" fill="${M.color}"/>`;
+  if (!M.futsal) for (let i = 0; i < 10; i += 2) s += `<rect x="${FX}" y="${FY + i * FH / 10}" width="${FW}" height="${FH / 10}" fill="#fff" fill-opacity=".06"/>`;
+  s += `<rect x="${FX}" y="${FY}" width="${FW}" height="${FH}" ${L}/>`;
+  s += `<line x1="${FX}" y1="${cy}" x2="${FX + FW}" y2="${cy}" ${L}/>`;
+  s += `<circle cx="${cx}" cy="${cy}" r="${M.circle * FW}" ${L}/><circle cx="${cx}" cy="${cy}" r=".7" fill="#fff"/>`;
+  for (const top of [true, false]) {
+    const gy = top ? FY : FY + FH, dir = top ? 1 : -1;
+    if (M.futsal) {
+      const a = .375 * FW, D = .15 * FH;
+      const y1 = gy + dir * D * .55, y2 = gy + dir * D;
+      s += `<path d="M${cx - a} ${gy} L${cx - a} ${y1} Q${cx - a} ${y2} ${cx - a * .4} ${y2} L${cx + a * .4} ${y2} Q${cx + a} ${y2} ${cx + a} ${y1} L${cx + a} ${gy}" ${L}/>`;
+    } else {
+      const bw = M.box.w * FW, bd = M.box.d * FH, gw = M.gbox.w * FW, gd = M.gbox.d * FH;
+      s += `<rect x="${cx - bw / 2}" y="${top ? gy : gy - bd}" width="${bw}" height="${bd}" ${L}/>`;
+      s += `<rect x="${cx - gw / 2}" y="${top ? gy : gy - gd}" width="${gw}" height="${gd}" ${L}/>`;
+      if (M.arc) {
+        const spotY = gy + dir * M.spot * FH, boxY = gy + dir * bd, r = M.circle * FW;
+        const d = Math.abs(boxY - spotY);
+        if (r > d) {
+          const dx = Math.sqrt(r * r - d * d);
+          s += `<path d="M${cx - dx} ${boxY} A${r} ${r} 0 0 ${top ? 0 : 1} ${cx + dx} ${boxY}" ${L}/>`;
+        }
+      }
+    }
+    s += `<circle cx="${cx}" cy="${gy + dir * M.spot * FH}" r=".6" fill="#fff"/>`;
+    const gW = M.goal * FW;
+    s += `<rect x="${cx - gW / 2}" y="${top ? gy - 2.6 : gy}" width="${gW}" height="2.6" stroke="#fff" stroke-width=".5" fill="#fff" fill-opacity=".25"/>`;
+  }
+  return s;
+}
+
+function trunc(s, n) { s = String(s); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+function piecesSvg(mode, slots) {
+  const r = MODES[mode].r;
+  return slots.map((s, i) => {
+    const { X, Y } = toSvg(s);
+    const p = s.p && player(s.p);
+    const gk = i === 0;
+    const fill = !p ? '#ffffff' : gk ? '#f39c12' : '#1d4ed8';
+    const fop = !p ? '.2' : '1';
+    const label = p ? (p.number !== '' ? p.number : p.name.slice(0, 1)) : (gk ? 'GK' : '+');
+    const fs = r * (String(label).length > 2 ? .72 : String(label).length > 1 ? .9 : 1.05);
+    return `<g class="piece" data-slot="${i}" transform="translate(${X.toFixed(2)},${Y.toFixed(2)})">
+      <circle r="${r + 3}" fill="#000" fill-opacity="0"/>
+      <circle r="${r}" cy=".5" fill="#000" fill-opacity=".25"/>
+      <circle r="${r}" fill="${fill}" fill-opacity="${fop}" stroke="#fff" stroke-width=".6"${p ? '' : ' stroke-dasharray="1.4 1"'}/>
+      <text y="${fs * .35}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="#fff">${esc(label)}</text>
+      ${p ? `<text y="${r + 4.2}" text-anchor="middle" font-size="3.4" font-weight="700" fill="#fff" stroke="#000" stroke-opacity=".6" stroke-width=".9" stroke-linejoin="round" paint-order="stroke">${esc(trunc(p.name, 7))}</text>` : ''}
+    </g>`;
+  }).join('');
+}
+
+const SVG_FONT = `font-family="-apple-system, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif"`;
+function miniField(mode, pos) {
+  const dots = pos.map(([x, y], i) => { const { X, Y } = toSvg({ x, y }); return `<circle cx="${X}" cy="${Y}" r="5" fill="${i === 0 ? '#f39c12' : '#1d4ed8'}" stroke="#fff" stroke-width="1"/>`; }).join('');
+  return `<svg viewBox="0 0 100 150">${fieldBg(mode)}${dots}</svg>`;
+}
+
+/* ================= 画面 ================= */
+function render() {
+  const plan = S.tab !== 'players' ? curPlan() : null;
+  $('#modeSeg').style.display = S.tab === 'players' ? 'none' : '';
+  $('#modeSeg').innerHTML = Object.entries(MODES).map(([k, m]) =>
+    `<button class="${k === S.mode ? 'on' : ''}" data-act="mode" data-mode="${k}">${m.label} ${m.n}人</button>`).join('');
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab));
+  const app = $('#app');
+  if (S.tab === 'field') { app.innerHTML = fieldView(plan); bindField(); }
+  else if (S.tab === 'plan') app.innerHTML = planView(plan);
+  else { app.innerHTML = playersView(); bindPlayers(); }
+}
+
+function periodChips(plan, act) {
+  return plan.periods.map(p =>
+    `<button class="chip ${p.id === plan.cur ? 'on' : ''}" data-act="${act}" data-id="${p.id}">${esc(p.name)}${p.minutes ? `<small>${p.minutes}分</small>` : ''}</button>`).join('');
+}
+
+function fieldView(plan) {
+  const per = curPeriod(), idx = plan.periods.indexOf(per);
+  const ch = changeList(plan, idx), bench = benchPlayers(per);
+  const filled = per.slots.filter(s => s.p).length;
+  return `
+    <div class="chips">${periodChips(plan, 'selPeriod')}<button class="chip add" data-act="addPeriod">＋ 時間帯を追加</button></div>
+    <div class="row between">
+      <div class="pername">${esc(per.name)} ${per.minutes ? `<span class="muted">${per.minutes}分</span>` : ''}
+        <span class="muted">（${filled}/${per.slots.length}人）</span></div>
+      <button class="btn sm" data-act="editPeriod">編集</button>
+    </div>
+    <svg id="field" viewBox="0 0 100 150" ${SVG_FONT}>${fieldBg(S.mode)}${piecesSvg(S.mode, per.slots)}</svg>
+    <p class="hint">コマはドラッグで移動、タップで選手を割り当て</p>
+    <div class="actions">
+      <button class="btn" data-act="formations">フォーメーション</button>
+      <button class="btn primary" data-act="exportImg">画像で保存</button>
+    </div>
+    ${idx > 0 ? `<div class="card"><h3>「${esc(plan.periods[idx - 1].name)}」からの交代</h3>
+      ${ch.length ? ch.map(subRow).join('') : '<p class="muted" style="margin:0">交代なし</p>'}</div>` : ''}
+    <div class="card"><h3>ベンチ（${bench.length}人）</h3>
+      ${bench.length ? `<div class="wrap">${bench.map(p => `<button class="bench" data-act="benchTap" data-pid="${p.id}">${p.number !== '' ? `<b>${esc(p.number)}</b>` : ''}${esc(p.name)}</button>`).join('')}</div>
+        <p class="muted" style="margin:8px 0 0">ベンチの選手をタップするとフィールドの選手と交代できます</p>`
+        : `<p class="muted" style="margin:0">${S.players.length ? 'ベンチの選手はいません' : '選手タブから選手を追加してください'}</p>`}
+    </div>`;
+}
+function subRow(c) {
+  return `<div class="sub">
+    ${c.out ? `<span class="tag out">OUT</span><span class="out">${esc(pname(c.out))}</span>` : ''}
+    ${c.out && c.in ? '<span class="muted">→</span>' : ''}
+    ${c.in ? `<span class="tag in">IN</span><span class="in">${esc(pname(c.in))}</span>` : ''}
+  </div>`;
+}
+
+function planView(plan) {
+  const ps = sortedPlayers(), N = MODES[S.mode].n;
+  const hasMin = plan.periods.some(p => p.minutes);
+  const totalMin = plan.periods.reduce((a, p) => a + (Number(p.minutes) || 0), 0);
+  const head = `<tr><th class="sticky">選手</th>${plan.periods.map(p =>
+    `<th class="per" data-act="goPeriod" data-id="${p.id}">${esc(p.name)}${p.minutes ? `<small>${p.minutes}分</small>` : ''}</th>`).join('')}
+    <th>${hasMin ? `出場時間<small style="display:block;font-weight:400;color:var(--muted)">/${totalMin}分</small>` : '出場数'}</th></tr>`;
+  const rows = ps.map(p => {
+    let cnt = 0, min = 0;
+    const cells = plan.periods.map(per => {
+      const on = per.slots.some(s => s.p === p.id);
+      if (on) { cnt++; min += Number(per.minutes) || 0; }
+      return `<td class="${on ? 'on' : 'off'}">${on ? '●' : '－'}</td>`;
+    }).join('');
+    return `<tr><td class="sticky">${p.number !== '' ? `<span class="muted">${esc(p.number)}</span> ` : ''}${esc(p.name)}</td>${cells}
+      <td class="total">${hasMin ? `${min}分` : `${cnt}/${plan.periods.length}`}</td></tr>`;
+  }).join('');
+  const foot = `<tr class="foot"><td class="sticky" style="background:#f7f9f8">人数</td>${plan.periods.map(per => {
+    const f = per.slots.filter(s => s.p).length;
+    return `<td class="${f < N ? 'warn' : ''}">${f}/${N}</td>`;
+  }).join('')}<td></td></tr>`;
+
+  const flows = plan.periods.slice(1).map((per, i) => {
+    const ch = changeList(plan, i + 1);
+    return `<div class="card"><h3>${esc(plan.periods[i].name)} → ${esc(per.name)}</h3>
+      ${ch.length ? ch.map(subRow).join('') : '<p class="muted" style="margin:0">交代なし</p>'}</div>`;
+  }).join('');
+
+  return `
+    <p class="muted" style="margin:10px 0 0">時間帯の名前をタップすると、その時間帯の配置を編集できます。</p>
+    ${ps.length ? `<div class="tbl-wrap"><table><thead>${head}</thead><tbody>${rows}${foot}</tbody></table></div>`
+      : `<div class="card"><p class="muted" style="margin:0">選手がまだいません。選手タブから追加してください。</p></div>`}
+    <h3 style="margin-top:16px">交代の流れ</h3>
+    ${flows || '<div class="card"><p class="muted" style="margin:0">時間帯が1つだけです。フィールド画面で「＋ 時間帯を追加」すると、交代を計画できます。</p></div>'}`;
+}
+
+function playersView() {
+  const ps = sortedPlayers();
+  return `
+    <div class="card" style="margin-top:12px"><h3>選手を追加</h3>
+      <div class="row">
+        <input id="newNum" class="num-in" type="text" inputmode="numeric" placeholder="背番号" maxlength="3">
+        <input id="newName" class="grow" type="text" placeholder="選手名" maxlength="20" enterkeyhint="done">
+      </div>
+      <button class="btn primary block" data-act="addPlayer">追加</button>
+    </div>
+    <div class="card"><h3>選手一覧（${ps.length}人）</h3>
+      ${ps.length ? ps.map(p => `<div class="prow">
+          <span class="num ${p.number === '' ? 'empty' : ''}">${esc(p.number)}</span>
+          <span class="nm">${esc(p.name)}</span>
+          <button class="btn sm" data-act="editPlayer" data-pid="${p.id}">編集</button>
+        </div>`).join('') : '<p class="muted" style="margin:0">まだ選手がいません</p>'}
+    </div>
+    <div class="card"><h3>データのバックアップ</h3>
+      <p class="muted" style="margin:0 0 8px">データはこのiPhoneのブラウザ内に保存されています。機種変更やデータの消失に備えて、ときどき書き出しておくと安心です。</p>
+      <div class="actions" style="margin:0">
+        <button class="btn" data-act="exportData">書き出す</button>
+        <button class="btn" data-act="importData">読み込む</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>`;
+}
+function bindPlayers() {
+  $('#newName').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ACT.addPlayer(); } });
+  $('#importFile').addEventListener('change', importFile);
+}
+
+/* ================= ドラッグ ================= */
+let drag = null;
+function bindField() {
+  const svg = $('#field');
+  const pt = e => { const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); };
+  svg.addEventListener('pointerdown', e => {
+    const g = e.target.closest('g.piece'); if (!g) return;
+    e.preventDefault();
+    const p0 = pt(e), s = curPeriod().slots[+g.dataset.slot], { X, Y } = toSvg(s);
+    drag = { i: +g.dataset.slot, g, sx: e.clientX, sy: e.clientY, ox: X - p0.x, oy: Y - p0.y, moved: false, id: e.pointerId };
+    svg.setPointerCapture(e.pointerId);
+  });
+  svg.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.moved) {
+      if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 6) return;
+      drag.moved = true; svg.appendChild(drag.g);
+    }
+    const p = pt(e), s = curPeriod().slots[drag.i];
+    s.x = round1(Math.min(100, Math.max(0, (p.x + drag.ox - FX) / FW * 100)));
+    s.y = round1(Math.min(100, Math.max(0, (p.y + drag.oy - FY) / FH * 100)));
+    const { X, Y } = toSvg(s);
+    drag.g.setAttribute('transform', `translate(${X.toFixed(2)},${Y.toFixed(2)})`);
+  });
+  const end = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag; drag = null;
+    if (d.moved) save(); else if (e.type === 'pointerup') openPieceSheet(d.i);
+  };
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+}
+
+/* ================= シート ================= */
+function openSheet(title, html) {
+  closeSheet();
+  const el = document.createElement('div');
+  el.className = 'backdrop'; el.id = 'sheet';
+  el.innerHTML = `<div class="sheet"><div class="sheet-head"><h2>${esc(title)}</h2><button class="x" data-act="closeSheet">✕</button></div>${html}</div>`;
+  el.addEventListener('click', e => { if (e.target === el) closeSheet(); });
+  document.body.appendChild(el);
+  return el;
+}
+function closeSheet() { const s = $('#sheet'); if (s) s.remove(); }
+function commit() { save(); closeSheet(); render(); }
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 1800);
+}
+
+function openPieceSheet(i) {
+  ctx = { slot: i };
+  const per = curPeriod(), s = per.slots[i], ps = sortedPlayers();
+  const title = s.p ? `${pname(s.p)} のポジション` : (i === 0 ? 'GK のポジション' : '空きポジション');
+  let html;
+  if (!ps.length) {
+    html = `<p class="muted">まだ選手がいません。</p><button class="btn primary block" data-act="tab" data-tab="players">選手を追加する</button>`;
+  } else {
+    html = ps.map(p => {
+      const j = per.slots.findIndex(x => x.p === p.id);
+      const st = j === i ? '配置中' : j >= 0 ? '出場中（位置を入れ替え）' : 'ベンチ';
+      return `<button class="item ${j === i ? 'cur' : ''}" data-act="assign" data-pid="${p.id}">
+        <span class="num ${p.number === '' ? 'empty' : ''}">${esc(p.number)}</span><span class="nm">${esc(p.name)}</span><span class="st">${st}</span></button>`;
+    }).join('');
+    if (s.p) html += `<button class="btn danger block" data-act="clearSlot">このポジションを空ける</button>`;
+  }
+  openSheet(title, html);
+}
+
+/* ================= 画像保存 ================= */
+async function shareOrDownload(blob, filename) {
+  const file = new File([blob], filename, { type: blob.type });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); return; }
+    catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+async function exportImage() {
+  const plan = curPlan(), per = curPeriod(), idx = plan.periods.indexOf(per);
+  const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150" width="1000" height="1500" ${SVG_FONT}>${fieldBg(S.mode)}${piecesSvg(S.mode, per.slots)}</svg>`;
+  const img = new Image();
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+  await new Promise((ok, ng) => { img.onload = ok; img.onerror = ng; });
+
+  const W = 1000, PAD = 40, font = '-apple-system, "Hiragino Sans", sans-serif';
+  const c = document.createElement('canvas'), g = c.getContext('2d');
+  // フッター（交代・ベンチ）の行を先に組み立て
+  g.font = `32px ${font}`;
+  const wrapText = (text, maxW) => {
+    const lines = []; let line = '';
+    for (const ch of text) { if (g.measureText(line + ch).width > maxW) { lines.push(line); line = ch; } else line += ch; }
+    if (line) lines.push(line); return lines;
+  };
+  const foot = [];
+  const ch = changeList(plan, idx);
+  if (ch.length) {
+    foot.push({ t: `「${plan.periods[idx - 1].name}」からの交代`, bold: true });
+    ch.forEach(c => foot.push({ t: `${c.out ? 'OUT ' + pname(c.out) : ''}${c.out && c.in ? '  →  ' : ''}${c.in ? 'IN ' + pname(c.in) : ''}` }));
+  }
+  const bench = benchPlayers(per);
+  if (bench.length) {
+    foot.push({ t: 'ベンチ', bold: true });
+    wrapText(bench.map(p => (p.number !== '' ? p.number + ' ' : '') + p.name).join('、'), W - PAD * 2).forEach(t => foot.push({ t }));
+  }
+  const HEAD = 130, LH = 46, FOOT = foot.length ? foot.length * LH + PAD : 0;
+  c.width = W; c.height = HEAD + 1500 + FOOT;
+  g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+  g.fillStyle = '#1b2420'; g.textBaseline = 'middle';
+  g.font = `bold 48px ${font}`;
+  g.fillText(`${per.name}${per.minutes ? `（${per.minutes}分）` : ''}`, PAD, 52);
+  g.font = `30px ${font}`; g.fillStyle = '#6b7a73';
+  g.fillText(`${MODES[S.mode].label}  ${per.slots.filter(s => s.p).length}/${per.slots.length}人`, PAD, 100);
+  g.drawImage(img, 0, HEAD, 1000, 1500);
+  let y = HEAD + 1500 + PAD / 2 + LH / 2;
+  foot.forEach(l => { g.font = `${l.bold ? 'bold ' : ''}32px ${font}`; g.fillStyle = l.bold ? '#14804a' : '#1b2420'; g.fillText(l.t, PAD, y); y += LH; });
+
+  const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+  await shareOrDownload(blob, `${MODES[S.mode].label}_${per.name}.png`.replace(/[\\/:*?"<>|]/g, '_'));
+}
+
+/* ================= バックアップ ================= */
+function importFile(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!d || d.version !== 1 || !Array.isArray(d.players)) throw new Error();
+      if (!confirm('現在のデータを、読み込んだデータで上書きします。よろしいですか？')) return;
+      S = Object.assign(freshState(), d); S.tab = 'players'; save(); render(); toast('読み込みました');
+    } catch (err) { alert('ファイルを読み込めませんでした'); }
+  };
+  r.readAsText(f);
+}
+
+/* ================= アクション ================= */
+const ACT = {
+  closeSheet: closeSheet,
+  tab(t) { closeSheet(); S.tab = t.dataset.tab; save(); render(); window.scrollTo(0, 0); },
+  mode(t) { S.mode = t.dataset.mode; save(); render(); },
+  selPeriod(t) { curPlan().cur = t.dataset.id; save(); render(); },
+  goPeriod(t) { curPlan().cur = t.dataset.id; S.tab = 'field'; save(); render(); window.scrollTo(0, 0); },
+  addPeriod() {
+    const plan = curPlan(), per = curPeriod(), idx = plan.periods.indexOf(per);
+    const names = new Set(plan.periods.map(p => p.name));
+    let n = plan.periods.length + 1, name = `時間帯${n}`;
+    if (plan.periods.length === 1 && !names.has('後半')) name = '後半';
+    while (names.has(name)) name = `時間帯${++n}`;
+    const np = { id: uid(), name, minutes: per.minutes, slots: per.slots.map(s => ({ ...s })) };
+    plan.periods.splice(idx + 1, 0, np); plan.cur = np.id;
+    save(); render();
+    toast(`「${per.name}」をコピーしました。交代する選手を入れ替えてください`);
+    setTimeout(() => { const c = document.querySelector('.chip.on'); if (c) c.scrollIntoView({ inline: 'center', behavior: 'smooth' }); }, 50);
+  },
+  editPeriod() {
+    const per = curPeriod(), plan = curPlan();
+    openSheet('時間帯を編集', `
+      <label class="field">名前<input id="pName" type="text" value="${esc(per.name)}" maxlength="20" placeholder="例：前半 0〜10分"></label>
+      <label class="field">時間（分・任意）<input id="pMin" type="text" inputmode="numeric" value="${per.minutes ?? ''}" placeholder="例：10"></label>
+      <button class="btn primary block" data-act="savePeriod">保存</button>
+      <div class="actions"><button class="btn" data-act="movePeriod" data-dir="-1">← 前へ移動</button><button class="btn" data-act="movePeriod" data-dir="1">後ろへ移動 →</button></div>
+      ${plan.periods.length > 1 ? '<button class="btn danger block" data-act="delPeriod">この時間帯を削除</button>' : ''}`);
+  },
+  savePeriod() {
+    const per = curPeriod(), name = $('#pName').value.trim(), m = $('#pMin').value.trim();
+    if (name) per.name = name;
+    const mm = parseInt(m.replace(/[０-９]/g, d => String.fromCharCode(d.charCodeAt(0) - 0xFEE0)), 10);
+    per.minutes = m === '' || isNaN(mm) ? null : Math.max(0, mm);
+    commit();
+  },
+  movePeriod(t) {
+    const plan = curPlan(), i = plan.periods.indexOf(curPeriod()), j = i + Number(t.dataset.dir);
+    if (j < 0 || j >= plan.periods.length) return;
+    [plan.periods[i], plan.periods[j]] = [plan.periods[j], plan.periods[i]];
+    save(); render();
+  },
+  delPeriod() {
+    const plan = curPlan(), per = curPeriod();
+    if (!confirm(`「${per.name}」を削除しますか？`)) return;
+    const i = plan.periods.indexOf(per); plan.periods.splice(i, 1);
+    plan.cur = plan.periods[Math.max(0, i - 1)].id; commit();
+  },
+  assign(t) {
+    const per = curPeriod(), i = ctx.slot, pid = t.dataset.pid, j = per.slots.findIndex(x => x.p === pid);
+    if (j >= 0 && j !== i) per.slots[j].p = per.slots[i].p;
+    per.slots[i].p = pid; commit();
+  },
+  clearSlot() { curPeriod().slots[ctx.slot].p = null; commit(); },
+  benchTap(t) {
+    ctx = { pid: t.dataset.pid };
+    const per = curPeriod();
+    openSheet(`${pname(ctx.pid)} と交代する選手`, per.slots.map((s, i) => `
+      <button class="item" data-act="swapIn" data-slot="${i}">
+        <span class="num ${s.p ? '' : 'empty'}" style="${i === 0 && s.p ? 'background:#f39c12' : ''}">${s.p ? esc(player(s.p).number) : ''}</span>
+        <span class="nm">${s.p ? esc(pname(s.p)) : '（空きポジション）'}</span><span class="st">${i === 0 ? 'GK' : ''}</span></button>`).join(''));
+  },
+  swapIn(t) { curPeriod().slots[+t.dataset.slot].p = ctx.pid; commit(); },
+  formations() {
+    const m = S.mode, mine = S.formations.filter(f => f.mode === m);
+    const item = (f, src) => `<div class="fitem">${miniField(m, f.pos)}<div class="grow">${esc(f.name)}</div>
+      <div class="btns"><button class="btn sm primary" data-act="applyFormation" data-src="${src}" data-id="${f.id}">この時間帯に適用</button>
+      <button class="btn sm" data-act="applyFormation" data-src="${src}" data-id="${f.id}" data-all="1">全時間帯に適用</button>
+      ${src === 'user' ? `<button class="btn sm danger" data-act="delFormation" data-id="${f.id}">削除</button>` : ''}</div></div>`;
+    openSheet(`フォーメーション（${MODES[m].label}）`, `
+      <div class="row"><input id="fName" class="grow" type="text" placeholder="例：2-3-1 攻撃的" maxlength="20"><button class="btn primary" data-act="saveFormation">保存</button></div>
+      <p class="muted" style="margin:6px 0 0">「${esc(curPeriod().name)}」の今の配置を保存します（選手は保存されません）</p>
+      <div class="section-title">保存したフォーメーション</div>
+      ${mine.length ? mine.map(f => item(f, 'user')).join('') : '<p class="muted">まだありません</p>'}
+      <div class="section-title">基本フォーメーション</div>
+      ${PRESETS[m].map((f, i) => item({ ...f, id: String(i) }, 'preset')).join('')}`);
+  },
+  saveFormation() {
+    const name = $('#fName').value.trim() || `フォーメーション${S.formations.filter(f => f.mode === S.mode).length + 1}`;
+    S.formations.push({ id: uid(), mode: S.mode, name, pos: curPeriod().slots.map(s => [s.x, s.y]) });
+    save(); ACT.formations(); toast('保存しました');
+  },
+  applyFormation(t) {
+    const f = t.dataset.src === 'user' ? S.formations.find(x => x.id === t.dataset.id) : PRESETS[S.mode][+t.dataset.id];
+    if (!f) return;
+    const targets = t.dataset.all ? curPlan().periods : [curPeriod()];
+    targets.forEach(per => { per.slots = f.pos.map(([x, y], i) => ({ x, y, p: per.slots[i] ? per.slots[i].p : null })); });
+    commit(); toast(`「${f.name}」を適用しました`);
+  },
+  delFormation(t) {
+    const f = S.formations.find(x => x.id === t.dataset.id);
+    if (!f || !confirm(`「${f.name}」を削除しますか？`)) return;
+    S.formations = S.formations.filter(x => x !== f); save(); ACT.formations();
+  },
+  exportImg() { exportImage().catch(() => alert('画像の作成に失敗しました')); },
+  addPlayer() {
+    const name = $('#newName').value.trim(), num = $('#newNum').value.trim();
+    if (!name) { $('#newName').focus(); return; }
+    S.players.push({ id: uid(), name, number: num });
+    save(); render(); $('#newNum').focus(); toast(`${name} を追加しました`);
+  },
+  editPlayer(t) {
+    const p = player(t.dataset.pid); if (!p) return; ctx = { pid: p.id };
+    openSheet('選手を編集', `
+      <label class="field">背番号<input id="ePNum" type="text" inputmode="numeric" value="${esc(p.number)}" maxlength="3"></label>
+      <label class="field">選手名<input id="ePName" type="text" value="${esc(p.name)}" maxlength="20"></label>
+      <button class="btn primary block" data-act="savePlayer">保存</button>
+      <button class="btn danger block" data-act="delPlayer">この選手を削除</button>`);
+  },
+  savePlayer() {
+    const p = player(ctx.pid), name = $('#ePName').value.trim();
+    if (!p || !name) return;
+    p.name = name; p.number = $('#ePNum').value.trim(); commit();
+  },
+  delPlayer() {
+    const p = player(ctx.pid); if (!p || !confirm(`${p.name} を削除しますか？\n（全ての時間帯から外れます）`)) return;
+    S.players = S.players.filter(x => x !== p);
+    Object.values(S.plans).forEach(pl => pl.periods.forEach(per => per.slots.forEach(s => { if (s.p === p.id) s.p = null; })));
+    commit();
+  },
+  exportData() {
+    const blob = new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' });
+    const d = new Date(), ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+    shareOrDownload(blob, `formation-backup-${ymd}.json`);
+  },
+  importData() { $('#importFile').click(); },
+};
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]'); if (!t) return;
+  const fn = ACT[t.dataset.act]; if (fn) fn(t, e);
+});
+
+render();
+</script>
+</body>
+</html>
