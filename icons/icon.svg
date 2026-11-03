@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<defs>
+  <radialGradient id="bg" cx="50%" cy="38%" r="75%">
+    <stop offset="0" stop-color="#1fa35a"/><stop offset=".6" stop-color="#11743d"/><stop offset="1" stop-color="#083d20"/>
+  </radialGradient>
+  <radialGradient id="shade" cx="36%" cy="30%" r="80%">
+    <stop offset="0" stop-color="#fff" stop-opacity=".0"/>
+    <stop offset=".55" stop-color="#000" stop-opacity=".0"/>
+    <stop offset="1" stop-color="#0b2a18" stop-opacity=".45"/>
+  </radialGradient>
+  <radialGradient id="hl" cx="50%" cy="50%" r="50%">
+    <stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="shadow" cx="50%" cy="50%" r="50%">
+    <stop offset="0" stop-color="#000" stop-opacity=".45"/><stop offset="1" stop-color="#000" stop-opacity="0"/>
+  </radialGradient>
+  <clipPath id="ball"><circle cx="256" cy="250" r="150"/></clipPath>
+</defs>
+<rect width="512" height="512" fill="url(#bg)"/>
+<!-- 芝のストライプ -->
+<rect x="0" y="0" width="512" height="32" fill="#fff" fill-opacity=".035"/><rect x="0" y="64" width="512" height="32" fill="#fff" fill-opacity=".035"/><rect x="0" y="128" width="512" height="32" fill="#fff" fill-opacity=".035"/><rect x="0" y="192" width="512" height="32" fill="#fff" fill-opacity=".035"/><rect x="0" y="256" width="512" height="32" fill="#fff" fill-opacity=".035"/><rect x="0" y="320" width="512" height="32" fill="#fff" fill-opacity=".035"/><rect x="0" y="384" width="512" height="32" fill="#fff" fill-opacity=".035"/><rect x="0" y="448" width="512" height="32" fill="#fff" fill-opacity=".035"/>
+<!-- ピッチのライン -->
+<g fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="7">
+  <line x1="0" y1="256" x2="512" y2="256"/>
+  <circle cx="256" cy="256" r="205"/>
+  <rect x="146" y="-10" width="220" height="70"/>
+  <rect x="146" y="452" width="220" height="70"/>
+</g>
+<!-- 影 -->
+<ellipse cx="256" cy="422" rx="128" ry="20" fill="url(#shadow)"/>
+<!-- ボール -->
+<circle cx="256" cy="250" r="150" fill="#fbfbf8"/>
+<g clip-path="url(#ball)">
+  <g stroke="#1d2522" stroke-width="5" stroke-linecap="round" fill="none"><line x1="256.0" y1="203.5" x2="256.0" y2="157.0"/><line x1="256.0" y1="157.0" x2="301.4" y2="114.7"/><line x1="256.0" y1="157.0" x2="210.6" y2="114.7"/><line x1="300.2" y1="235.6" x2="344.4" y2="221.3"/><line x1="344.4" y1="221.3" x2="398.7" y2="251.4"/><line x1="344.4" y1="221.3" x2="370.6" y2="165.1"/><line x1="283.3" y1="287.6" x2="310.7" y2="325.2"/><line x1="310.7" y1="325.2" x2="298.8" y2="386.1"/><line x1="310.7" y1="325.2" x2="372.2" y2="332.8"/><line x1="228.7" y1="287.6" x2="201.3" y2="325.2"/><line x1="201.3" y1="325.2" x2="139.8" y2="332.8"/><line x1="201.3" y1="325.2" x2="213.2" y2="386.1"/><line x1="211.8" y1="235.6" x2="167.6" y2="221.3"/><line x1="167.6" y1="221.3" x2="141.4" y2="165.1"/><line x1="167.6" y1="221.3" x2="113.3" y2="251.4"/><line x1="344.2" y1="83.6" x2="340.3" y2="91.0"/><line x1="387.0" y1="114.7" x2="381.2" y2="120.7"/><line x1="441.5" y1="282.4" x2="433.3" y2="281.0"/><line x1="425.1" y1="332.8" x2="417.7" y2="329.1"/><line x1="282.5" y1="436.4" x2="281.3" y2="428.2"/><line x1="229.5" y1="436.4" x2="230.7" y2="428.2"/><line x1="86.9" y1="332.8" x2="94.3" y2="329.1"/><line x1="70.5" y1="282.4" x2="78.7" y2="281.0"/><line x1="125.0" y1="114.7" x2="130.8" y2="120.7"/><line x1="167.8" y1="83.6" x2="171.7" y2="91.0"/></g>
+  <g fill="#18201d" stroke="#18201d" stroke-width="5" stroke-linejoin="round"><polygon points="256.0,203.5 300.2,235.6 283.3,287.6 228.7,287.6 211.8,235.6"/><polygon points="317.7,165.1 301.4,114.7 344.2,83.6 387.0,114.7 370.6,165.1"/><polygon points="355.9,282.4 398.7,251.4 441.5,282.4 425.1,332.8 372.2,332.8"/><polygon points="256.0,355.0 298.8,386.1 282.5,436.4 229.5,436.4 213.2,386.1"/><polygon points="156.1,282.4 139.8,332.8 86.9,332.8 70.5,282.4 113.3,251.4"/><polygon points="194.3,165.1 141.4,165.1 125.0,114.7 167.8,83.6 210.6,114.7"/></g>
+  <circle cx="256" cy="250" r="150" fill="url(#shade)"/>
+  <ellipse cx="201" cy="182" rx="46" ry="28" transform="rotate(-35 201 182)" fill="url(#hl)" opacity=".35"/>
+</g>
+<circle cx="256" cy="250" r="150" fill="none" stroke="#0b2a18" stroke-opacity=".35" stroke-width="3"/>
+</svg>
